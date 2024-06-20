@@ -12,7 +12,7 @@ class DQNModuleTransformer(DQNModuleBase):
     def __init__(self, params):
         super(DQNModuleTransformer, self).__init__(params)
 
-        # Initialize transfrmer-specific components -> I'd like to use existing CNN from Arnold project instead of this
+        # Initialize transformer-specific components -> I'd like to use existing CNN from Arnold project instead of this
 
         self.obs_embedding = ObservationEmbeddingRepresentation.make_image_representation(
             obs_dim=(params.n_fm, params.height, params.width),
@@ -165,7 +165,7 @@ class DQNTransformer(DQN):
         # dqn loss
         loss_sc = self.loss_fn_sc(
             scores1.view(batch_size, -1)[:, -self.params.n_rec_updates:],
-            Variable(scores2.data[:, -self.params.n_rec_updates:])
+            nn.Variable(scores2.data[:, -self.params.n_rec_updates:])
         )
 
         # game features loss

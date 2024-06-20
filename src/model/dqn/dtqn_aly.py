@@ -1,0 +1,115 @@
+import torch
+from DTQN.transformer import TransformerIdentityLayer, TransformerLayer
+from DTQN.position_encodings import PositionEncoding, PosEnum
+from DTQN.gates import GRUGate, ResGate
+from DTQN.representations import (
+    ObservationEmbeddingRepresentation,
+    ActionEmbeddingRepresentation,
+)
+from torch import nn
+
+def init_weights(module):
+    if isinstance(module, (nn.Linear, nn.Embedding)):
+        module.weight.data.normal_(mean=0.0, std=0.02)
+        if isinstance(module, nn.Linear) and module.bias is not None:
+            module.bias.data.zero_()
+    elif isinstance(module, nn.MultiheadAttention):
+        module.in_proj_weight.data.normal_(mean=0.0, std=0.02)
+        module.out_proj.weight.data.normal_(mean=0.0, std=0.02)
+        module.in_proj_bias.data.zero_()
+    elif isinstance(module, nn.LayerNorm):
+        module.bias.data.zero_()
+        module.weight.data.fill_(1.0)
+
+class DTQN_aly(nn.Module):
+    """Deep Transformer Q-Network for partially observable reinforcement learning.
+    ASSUMPTION 1: WE ARE NOT TAKING ACTION EMBEDDINGS FOR THE INPUT FOR TRANSFORMERS
+    ASSUMPTION 2: WE ARE USING CNN OUTPUTS AS EMBEDDINGS, WHICH WILL HAVE obs_dim dimensions as inputs, and d_k as outputs
+    Args:
+        obs_dim:            The length of the observation vector.
+        num_actions:        The number of possible environments actions.
+        (NOT USED) embed_per_obs_dim:  Used for discrete observation space. Length of the embed for each
+            element in the observation dimension.
+        (NOT USED) action_dim:         The number of features to give the action.
+        d_k:   The dimensionality of the network. Referred to as d_k by the
+            original transformer.
+        num_heads:          The number of heads to use in the MultiHeadAttention.
+        num_layers:         The number of transformer blocks to use.
+        history_len:        The maximum number of observations to take in.
+        dropout:            Dropout percentage. Default: `0.0`
+        gate:               Which layer to use after the attention and feedforward submodules (choices: `res`
+            or `gru`). Default: `res`
+        identity:           Whether or not to use identity map reordering. Default: `False`
+        pos:                The kind of position encodings to use. `0` uses no position encodings, `1` uses
+            learned position encodings, and `sin` uses sinusoidal encodings. Default: `1`
+        (NOT USED) discrete:           Whether or not the environment has discrete observations. Default: `False`
+        (NOT USED) vocab_sizes:        If discrete env only. Represents the number of observations in the
+            environment. If the environment has multiple obs dims with different number
+            of observations in each dim, this can be supplied as a vector. Default: `None`
+    """
+    def __init__(self, obs_dim, num_actions, d_k, num_heads, num_layers, history_len, dropout=0.1, gate='res', identity=False, pos='sin'):
+        super().__init__()
+        self.obs_dim = obs_dim
+        self.num_actions = num_actions
+        self.d_k = d_k
+        self.num_heads = num_heads
+        self.num_layers = num_layers
+        self.history_len = history_len
+        self.dropout = dropout
+        self.gate = gate
+        self.identity = identity
+        self.pos = pos
+        pos_function_map = {
+            PosEnum.LEARNED: PositionEncoding.make_learned_position_encoding,
+            PosEnum.SIN: PositionEncoding.make_sinusoidal_position_encoding,
+            PosEnum.NONE: PositionEncoding.make_empty_position_encoding,
+        }
+        self.position_embedding = pos_function_map[PosEnum(pos)](
+            context_len=history_len, embed_dim=d_k
+        )
+        if gate == "gru":
+            attn_gate = GRUGate(embed_size=d_k)
+            mlp_gate = GRUGate(embed_size=d_k)
+        elif gate == "res":
+            attn_gate = ResGate()
+            mlp_gate = ResGate()
+        else:
+            raise ValueError("Gate must be one of `gru`, `res`")
+
+        self.dropout = nn.Dropout(dropout)
+        if identity:
+            transformer_block = TransformerIdentityLayer
+        else:
+            transformer_block = TransformerLayer
+        self.transformer_layers = nn.Sequential(
+            *[
+                transformer_block(
+                    num_heads,
+                    d_k,
+                    history_len,
+                    dropout,
+                    attn_gate,
+                    mlp_gate,
+                )
+                for _ in range(num_layers)
+            ]
+        )
+        self.apply(init_weights)
+    def embedObservations(self):
+        pass
+    
+    def forward(self, obss_embeddings: torch.Tensor):
+        obs_dim = obss_embeddings.size()[2:] if len(obss_embeddings.size()) > 3 else obss_embeddings.size(2)
+        history_len = obss_embeddings.size(1)
+        assert (
+            history_len <= self.history_len
+        ), "Cannot forward, history is longer than expected."
+
+        assert (
+            obs_dim == self.obs_dim
+        ), f"Obs dim is incorrect. Expected {self.obs_dim} got {obs_dim}"
+        inputs = self.dropout(
+                obss_embeddings + self.position_embedding()
+            )
+        output = self.ffn(self.transformer_layers(inputs))
+        return output[:, -history_len:, :] # NOT SURE ABOUT THAT

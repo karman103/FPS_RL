@@ -77,7 +77,7 @@ class ObservationEmbeddingRepresentation(nn.Module):
     @staticmethod
     def make_image_representation(obs_dim: Tuple, outer_embed_size: int):
         """
-        For use in image observatino environments.
+        For use in image observation environments.
 
         Args:
             obs_dim:            The image observation's dimensions (C x H x W).
