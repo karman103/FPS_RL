@@ -1,10 +1,11 @@
-from .dqn import DQNRecurrent, DQNFeedforward
+from .dqn import DQNRecurrent, DQNFeedforward, DTQNAgent
 from ..utils import bool_flag
 
 
 models = {
     'dqn_ff': DQNFeedforward,
-    'dqn_rnn': DQNRecurrent
+    'dqn_rnn': DQNRecurrent,
+    'dtqn': DTQNAgent,
 }
 
 

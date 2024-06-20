@@ -1,4 +1,5 @@
 import torch
+from base import DQNModuleBase
 from DTQN.transformer import TransformerIdentityLayer, TransformerLayer
 from DTQN.position_encodings import PositionEncoding, PosEnum
 from DTQN.gates import GRUGate, ResGate
@@ -21,7 +22,7 @@ def init_weights(module):
         module.bias.data.zero_()
         module.weight.data.fill_(1.0)
 
-class DTQN_aly(nn.Module):
+class DTQN_aly(DQNModuleBase):
     """Deep Transformer Q-Network for partially observable reinforcement learning.
     ASSUMPTION 1: WE ARE NOT TAKING ACTION EMBEDDINGS FOR THE INPUT FOR TRANSFORMERS
     ASSUMPTION 2: WE ARE USING CNN OUTPUTS AS EMBEDDINGS, WHICH WILL HAVE obs_dim dimensions as inputs, and d_k as outputs
@@ -47,8 +48,9 @@ class DTQN_aly(nn.Module):
             environment. If the environment has multiple obs dims with different number
             of observations in each dim, this can be supplied as a vector. Default: `None`
     """
-    def __init__(self, obs_dim, num_actions, d_k, num_heads, num_layers, history_len, dropout=0.1, gate='res', identity=False, pos='sin'):
-        super().__init__()
+    def __init__(self, params, obs_dim, num_actions, d_k, num_heads, num_layers, history_len, dropout=0.1, gate='res', identity=False, pos='sin'):
+        # Investigate what are params
+        super(DTQN_aly, self).__init__(params)
         self.obs_dim = obs_dim
         self.num_actions = num_actions
         self.d_k = d_k
@@ -98,7 +100,21 @@ class DTQN_aly(nn.Module):
     def embedObservations(self):
         pass
     
-    def forward(self, obss_embeddings: torch.Tensor):
+    def forward(self, x_screens, x_variables, prev_state):
+        batch_size = x_screens.size(0)
+        seq_len = x_screens.size(1)
+        assert x_screens.ndimension() == 5
+        assert len(x_variables) == self.n_variables
+        assert all(x.ndimension() == 2 and x.size(0) == batch_size and
+                   x.size(1) == seq_len for x in x_variables)
+
+        # We're doing a batched forward through the network base
+        # Flattening seq_len into batch_size ensures that it will be applied
+        # to all timesteps independently.
+        obss_embeddings, output_gf = self.base_forward(
+            x_screens.view(batch_size * seq_len, *x_screens.size()[2:]),
+            [v.contiguous().view(batch_size * seq_len) for v in x_variables]
+        )
         obs_dim = obss_embeddings.size()[2:] if len(obss_embeddings.size()) > 3 else obss_embeddings.size(2)
         history_len = obss_embeddings.size(1)
         assert (
