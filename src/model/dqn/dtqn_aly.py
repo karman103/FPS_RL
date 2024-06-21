@@ -97,9 +97,6 @@ class DTQN_aly(DQNModuleBase):
             ]
         )
         self.apply(init_weights)
-    def embedObservations(self):
-        pass
-    
     def forward(self, x_screens, x_variables, prev_state):
         batch_size = x_screens.size(0)
         seq_len = x_screens.size(1)
@@ -128,4 +125,10 @@ class DTQN_aly(DQNModuleBase):
                 obss_embeddings + self.position_embedding()
             )
         output = self.ffn(self.transformer_layers(inputs))
-        return output[:, -history_len:, :] # NOT SURE ABOUT THAT
+        output_sc, output_gf = self.head_forward(output.view(-1, self.hidden_dim))
+        return output[:, -history_len:, :], output_gf # NOT SURE ABOUT THAT
+    
+# Questions and uncertainties:
+# - Are the shapes correct?
+# - Do we proceed the same way as in an LSTM? i.e, do we input and output hidden states? Or just a bunch of observations? I.e. images and states? (ISSUE)
+# - 
