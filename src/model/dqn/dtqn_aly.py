@@ -127,7 +127,16 @@ class DTQN_aly(DQNModuleBase):
         output = self.ffn(self.transformer_layers(inputs))
         output_sc, output_gf = self.head_forward(output.view(-1, self.hidden_dim))
         return output[:, -history_len:, :], output_gf # NOT SURE ABOUT THAT
-    
+
+# To do:
+# - Game features vs variables / What other variables should we be feeding to the DTQN
+# - Pytorch version and functions
+# - Checkout dtqn_agent.py -> function: f_train
+# - Are the input / output shapes correct?
+
+
+
+
 # Questions and uncertainties:
 # - Are the shapes correct?
 # - Do we proceed the same way as in an LSTM? i.e, do we input and output hidden states? Or just a bunch of observations? I.e. images and states? (ISSUE)
