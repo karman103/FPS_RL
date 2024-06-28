@@ -68,8 +68,8 @@ class Trainer(object):
             # if we use non-continuous actions, otherwise it will correspond
             # to a set of continuous / discontinuous actions.
             # if DQN, epsilon greedy or action with the highest score
-            random_action = network_type.startswith('dqn') and self.epsilon_greedy()
-            if (network_type.startswith('dqn') and
+            random_action = (network_type.startswith('dqn') or network_type.startswith('dtqn')) and self.epsilon_greedy()
+            if ((network_type.startswith('dqn') or network_type.startswith('dtqn')) and
                 (not random_action or self.params.recurrence != '')):
                 self.network.module.eval()
                 action = self.network.next_action(last_states, save_graph=True)

@@ -130,7 +130,7 @@ class DQN(object):
         return dict(dqn_loss=[], gf_loss=[])
 
     def log_loss(self, loss_history):
-        logger.info('DQN loss: %.5f' % np.mean(loss_history['dqn_loss']))
+        logger.info('DQN loss: %.5f' % np.mean([o.cpu() for o in loss_history['dqn_loss']]))
         if self.n_features > 0:
             logger.info('Game features loss: %.5f' %
                         np.mean(loss_history['gf_loss']))
@@ -185,12 +185,13 @@ class DQN(object):
         return screens, variables, features, actions, rewards, isfinal
 
     def register_loss(self, loss_history, loss_sc, loss_gf):
-        loss_history['dqn_loss'].append(loss_sc.data[0])
+        loss_history['dqn_loss'].append(loss_sc.data)
         loss_history['gf_loss'].append(loss_gf.data[0]
                                        if self.n_features else 0)
 
     def next_action(self, last_states, save_graph=False):
         scores, pred_features = self.f_eval(last_states)
+        
         if self.params.network_type == 'dqn_ff':
             assert scores.size() == (1, self.module.n_actions)
             scores = scores[0]
@@ -205,7 +206,8 @@ class DQN(object):
             if pred_features is not None:
                 assert pred_features.size() == (1, seq_len, self.module.n_features)
                 pred_features = pred_features[0, -1]
-        action_id = scores.data.max(0)[1][0]
+            # print("SCORES: ", scores.data.max(0)[1][0] -> This does NOT work)
+        action_id = scores.data.max(0)[1]
         self.pred_features = pred_features
         return action_id
 

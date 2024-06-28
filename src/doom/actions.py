@@ -88,6 +88,8 @@ class ActionBuilder(object):
                            for k in self.available_buttons]
             return doom_action
         else:
+            if not(type(action) is int):
+              action = action.cpu().item()
             assert type(action) is int
             return self.doom_actions[action]
 

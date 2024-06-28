@@ -1,5 +1,5 @@
-from base import DQN
-from dtqn_aly import DTQN_aly
+from .base import DQN
+from .dtqn_aly import DTQN_aly
 import torch
 from torch.autograd import Variable
 class DTQNAgent(DQN):
@@ -7,9 +7,9 @@ class DTQNAgent(DQN):
     def __init__(self, params):
         super(DTQNAgent, self).__init__(params)
         # IDK ????
-    def reset(self):
-        # prev_state is only used for evaluation, so has a batch size of 1
-        self.prev_state = self.init_state_e
+    # def reset(self):
+    #     # prev_state is only used for evaluation, so has a batch size of 1
+    #     self.prev_state = self.init_state_e
 
     def f_eval(self, last_states):
 

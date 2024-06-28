@@ -116,7 +116,7 @@ class DQNRecurrent(DQN):
         )
 
         # compute scores
-        mask = torch.ByteTensor(output_sc.size()).fill_(0)
+        mask = torch.BoolTensor(output_sc.size()).fill_(0)
         for i in range(batch_size):
             for j in range(seq_len - 1):
                 mask[i, j, int(actions[i, j])] = 1

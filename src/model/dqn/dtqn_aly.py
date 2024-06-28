@@ -1,9 +1,9 @@
 import torch
-from base import DQNModuleBase
-from DTQN.transformer import TransformerIdentityLayer, TransformerLayer
-from DTQN.position_encodings import PositionEncoding, PosEnum
-from DTQN.gates import GRUGate, ResGate
-from DTQN.representations import (
+from .base import DQNModuleBase
+from .DTQN.transformer import TransformerIdentityLayer, TransformerLayer
+from .DTQN.position_encodings import PositionEncoding, PosEnum
+from .DTQN.gates import GRUGate, ResGate
+from .DTQN.representations import (
     ObservationEmbeddingRepresentation,
     ActionEmbeddingRepresentation,
 )
@@ -48,7 +48,7 @@ class DTQN_aly(DQNModuleBase):
             environment. If the environment has multiple obs dims with different number
             of observations in each dim, this can be supplied as a vector. Default: `None`
     """
-    def __init__(self, params, obs_dim, num_actions, d_k, num_heads, num_layers, history_len, dropout=0.1, gate='res', identity=False, pos='sin'):
+    def __init__(self, params, obs_dim=100, num_actions=4, d_k=512, num_heads=8, num_layers=5, history_len=10, dropout=0.1, gate='res', identity=False, pos='sin'):
         # Investigate what are params
         super(DTQN_aly, self).__init__(params)
         self.obs_dim = obs_dim
@@ -97,9 +97,11 @@ class DTQN_aly(DQNModuleBase):
             ]
         )
         self.apply(init_weights)
-    def forward(self, x_screens, x_variables, prev_state):
+    def forward(self, x_screens, x_variables):
         batch_size = x_screens.size(0)
         seq_len = x_screens.size(1)
+        print(x_screens)
+        print(x_screens.ndimension())
         assert x_screens.ndimension() == 5
         assert len(x_variables) == self.n_variables
         assert all(x.ndimension() == 2 and x.size(0) == batch_size and

@@ -126,7 +126,7 @@ def main(parser, args, parameter_server=None):
         evaluate_deathmatch(game, network, params)
     else:
         logger.info('Starting experiment...')
-        if params.network_type.startswith('dqn'):
+        if params.network_type.startswith('dqn') or params.network_type.startswith('dtqn'):
             trainer_class = ReplayMemoryTrainer
         else:
             raise RuntimeError("unknown network type " + params.network_type)

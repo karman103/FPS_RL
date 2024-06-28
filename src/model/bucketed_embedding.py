@@ -1,5 +1,5 @@
 import torch.nn as nn
-
+import torch
 
 class BucketedEmbedding(nn.Embedding):
 
@@ -9,4 +9,8 @@ class BucketedEmbedding(nn.Embedding):
         super(BucketedEmbedding, self).__init__(real_num_embeddings, *args, **kwargs)
 
     def forward(self, indices):
-        return super(BucketedEmbedding, self).forward(indices.div(self.bucket_size))
+        if indices.dtype != torch.long:
+            indices = indices.long()
+        # Perform integer division to get integer indices
+        bucket_indices = indices // self.bucket_size
+        return super(BucketedEmbedding, self).forward(bucket_indices)
