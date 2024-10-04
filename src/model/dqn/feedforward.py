@@ -23,6 +23,7 @@ class DQNModuleFeedforward(DQNModuleBase):
         batch_size = x_screens.size(0)
         assert x_screens.ndimension() == 4
         assert len(x_variables) == self.n_variables
+        # print("OKKKK", x_variables)
         assert all(x.ndimension() == 1 and x.size(0) == batch_size
                    for x in x_variables)
 
@@ -31,10 +32,9 @@ class DQNModuleFeedforward(DQNModuleBase):
 
         # apply the feed forward middle
         state_input = self.feedforward(state_input)
-
         # apply the head to feed forward result
         output_sc = self.head_forward(state_input)
-
+        
         return output_sc, output_gf
 
 
@@ -45,10 +45,11 @@ class DQNFeedforward(DQN):
     def f_eval(self, last_states):
 
         screens, variables = self.prepare_f_eval_args(last_states)
-
+        # print(variables)
+        # print("EVAL: ", [variables[-1, i].unsqueeze(0) for i in range(self.params.n_variables)])
         return self.module(
             screens.view(1, -1, *self.screen_shape[1:]),
-            [variables[-1, i] for i in range(self.params.n_variables)]
+            [variables[-1, i].unsqueeze(0) for i in range(self.params.n_variables)]
         )
 
     def f_train(self, screens, variables, features, actions, rewards, isfinal,
@@ -63,18 +64,20 @@ class DQNFeedforward(DQN):
 
         screens = screens.view(batch_size, seq_len * self.params.n_fm,
                                *self.screen_shape[1:])
-
+        # print("VARIABLES: ", variables)
+        # print("OUTPUT_SC1: ", [variables[:, -2, i] for i in range(self.params.n_variables)])
         output_sc1, output_gf1 = self.module(
             screens[:, :-self.params.n_fm, :, :],
             [variables[:, -2, i] for i in range(self.params.n_variables)]
         )
+        # print("OUTPUT_SC2: ", [variables[:, -1, i] for i in range(self.params.n_variables)])
         output_sc2, output_gf2 = self.module(
             screens[:, self.params.n_fm:, :, :],
             [variables[:, -1, i] for i in range(self.params.n_variables)]
         )
 
         # compute scores
-        mask = torch.ByteTensor(output_sc1.size()).fill_(0)
+        mask = torch.BoolTensor(output_sc1.size()).fill_(0)
         for i in range(batch_size):
             mask[i, int(actions[i, -1])] = 1
         scores1 = output_sc1.masked_select(self.get_var(mask))

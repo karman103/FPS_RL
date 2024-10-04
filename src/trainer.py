@@ -108,6 +108,7 @@ class Trainer(object):
             self.optimizer.zero_grad()
             sum(train_loss).backward()
             for p in self.network.module.parameters():
+              if p.grad is not None:
                 p.grad.data.clamp_(-5, 5)
 
             # update

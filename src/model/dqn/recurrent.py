@@ -50,7 +50,6 @@ class DQNModuleRecurrent(DQNModuleBase):
         output_sc = output_sc.view(batch_size, seq_len, output_sc.size(1))
         if self.n_features:
             output_gf = output_gf.view(batch_size, seq_len, self.n_features)
-
         return output_sc, output_gf, next_state
 
 
@@ -97,6 +96,7 @@ class DQNRecurrent(DQN):
             )
 
         # do not return the recurrent state
+        
         return output[:-1]
 
     def f_train(self, screens, variables, features, actions, rewards, isfinal,
@@ -114,7 +114,6 @@ class DQNRecurrent(DQN):
             [variables[:, :, i] for i in range(self.params.n_variables)],
             prev_state=self.init_state_t
         )
-
         # compute scores
         mask = torch.BoolTensor(output_sc.size()).fill_(0)
         for i in range(batch_size):

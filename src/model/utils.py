@@ -50,7 +50,7 @@ def build_CNN_network(module, params):
     module.n_actions = params.n_actions
 
     # screen input format - for RNN, we only take one frame at each time step
-    if hasattr(params, 'recurrence') and params.recurrence != '':
+    if (hasattr(params, 'recurrence') and params.recurrence != '') or params.network_type == "dtqn":
         in_channels = params.n_fm
     else:
         in_channels = params.n_fm * params.hist_size
@@ -84,6 +84,7 @@ def build_game_variables_network(module, params):
     """
     Build game variables network (health, ammo, etc.)
     """
+   
     module.game_variables = params.game_variables
     module.n_variables = params.n_variables
     module.game_variable_embeddings = []
@@ -98,6 +99,7 @@ def build_game_features_network(module, params):
     """
     Build game features network.
     """
+    print("GAME FEATURES: ", params.game_features)  
     module.game_features = params.game_features
     if module.game_features:
         module.n_features = module.game_features.count(',') + 1

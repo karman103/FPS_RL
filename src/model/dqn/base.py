@@ -64,12 +64,10 @@ class DQNModuleBase(nn.Module):
         # convolution
         x_screens = x_screens / 255.
         conv_output = self.conv(x_screens).view(batch_size, -1)
-
         # game variables
         if self.n_variables:
             embeddings = [self.game_variable_embeddings[i](x_variables[i])
                           for i in range(self.n_variables)]
-
         # game features
         if self.n_features:
             output_gf = self.proj_game_features(conv_output)
@@ -85,7 +83,6 @@ class DQNModuleBase(nn.Module):
         # dropout
         if self.dropout:
             output = self.dropout_layer(output)
-
         return output, output_gf
 
     def head_forward(self, state_input):
@@ -198,8 +195,7 @@ class DQN(object):
             if pred_features is not None:
                 assert pred_features.size() == (1, self.module.n_features)
                 pred_features = pred_features[0]
-        else:
-            assert self.params.network_type == 'dqn_rnn'
+        elif self.params.network_type == 'dqn_rnn':
             seq_len = 1 if self.params.remember else self.params.hist_size
             assert scores.size() == (1, seq_len, self.module.n_actions)
             scores = scores[0, -1]
@@ -207,6 +203,16 @@ class DQN(object):
                 assert pred_features.size() == (1, seq_len, self.module.n_features)
                 pred_features = pred_features[0, -1]
             # print("SCORES: ", scores.data.max(0)[1][0] -> This does NOT work)
+        else:
+            assert self.params.network_type == 'dtqn'
+            seq_len = 1 if self.params.remember else self.params.hist_size
+            print("SCORES SIZE: ",  scores.size())
+            print("SCORES: ", scores)
+            assert scores.size() == (1, seq_len, self.module.n_actions)
+            scores = scores[0, -1]
+            if pred_features is not None:
+                assert pred_features.size() == (1, seq_len, self.module.n_features)
+                pred_features = pred_features[0, -1]
         action_id = scores.data.max(0)[1]
         self.pred_features = pred_features
         return action_id

@@ -2,6 +2,8 @@ from .base import DQN
 from .dtqn_aly import DTQN_aly
 import torch
 from torch.autograd import Variable
+from ...utils import bool_flag
+
 class DTQNAgent(DQN):
     DQNModuleClass = DTQN_aly
     def __init__(self, params):
@@ -33,36 +35,46 @@ class DTQNAgent(DQN):
         batch_size = self.params.batch_size
         seq_len = self.hist_size + 1
 
-        screens = screens.view(batch_size, seq_len * self.params.n_fm,
-                               *self.screen_shape[1:])
         # I DONT GET IT
-        output_sc1, output_gf1 = self.module(
-            screens[:, :-self.params.n_fm, :, :],
-            [variables[:, -2, i] for i in range(self.params.n_variables)]
-        )
-        output_sc2, output_gf2 = self.module(
-            screens[:, self.params.n_fm:, :, :],
-            [variables[:, -1, i] for i in range(self.params.n_variables)]
+        output_sc, output_gf = self.module(
+            screens,
+            [variables[:, :, i] for i in range(self.params.n_variables)],
         )
 
         # compute scores
-        mask = torch.ByteTensor(output_sc1.size()).fill_(0)
+        mask = torch.BoolTensor(output_sc.size()).fill_(0)
         for i in range(batch_size):
-            mask[i, int(actions[i, -1])] = 1
-        scores1 = output_sc1.masked_select(self.get_var(mask))
-        scores2 = rewards[:, -1] + (
-            self.params.gamma * output_sc2.max(1)[0] * (1 - isfinal[:, -1])
+            for j in range(seq_len - 1):
+                mask[i, j, int(actions[i, j])] = 1
+        scores1 = output_sc.masked_select(self.get_var(mask))
+        scores2 = rewards + (
+            self.params.gamma * output_sc[:, 1:, :].max(2)[0] * (1 - isfinal)
         )
 
         # dqn loss
-        loss_sc = self.loss_fn_sc(scores1, Variable(scores2.data))
+        loss_sc = self.loss_fn_sc(
+            scores1.view(batch_size, -1)[:, -self.params.n_rec_updates:],
+            Variable(scores2.data[:, -self.params.n_rec_updates:])
+        )
 
         # game features loss
-        loss_gf = 0
         if self.n_features:
-            loss_gf += self.loss_fn_gf(output_gf1, features[:, -2].float())
-            loss_gf += self.loss_fn_gf(output_gf2, features[:, -1].float())
+            loss_gf = self.loss_fn_gf(output_gf, features.float())
+        else:
+            loss_gf = 0
 
         self.register_loss(loss_history, loss_sc, loss_gf)
 
         return loss_sc, loss_gf
+    @staticmethod
+    def register_args(parser):
+        DQN.register_args(parser)
+        parser.add_argument("--n_rec_updates", type=int, default=1,
+                            help="Number of updates to perform")
+        parser.add_argument("--remember", type=bool_flag, default=True,
+                            help="Remember the whole sequence")
+
+    @staticmethod
+    def validate_params(params):
+        DQN.validate_params(params)
+        assert params.n_rec_updates >= 1      

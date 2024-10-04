@@ -48,11 +48,13 @@ class DTQN_aly(DQNModuleBase):
             environment. If the environment has multiple obs dims with different number
             of observations in each dim, this can be supplied as a vector. Default: `None`
     """
-    def __init__(self, params, obs_dim=100, num_actions=4, d_k=512, num_heads=8, num_layers=5, history_len=10, dropout=0.1, gate='res', identity=False, pos='sin'):
+    def __init__(self, params, ffn_output=128, obs_dim=100, d_k=4672, num_heads=8, num_layers=5, history_len=50, dropout=0.1, gate='res', identity=False, pos='sin'):
         # Investigate what are params
         super(DTQN_aly, self).__init__(params)
+        self.params = params
         self.obs_dim = obs_dim
-        self.num_actions = num_actions
+        self.hidden_dim = params.hidden_dim
+        self.ffn_output = ffn_output
         self.d_k = d_k
         self.num_heads = num_heads
         self.num_layers = num_layers
@@ -96,43 +98,44 @@ class DTQN_aly(DQNModuleBase):
                 for _ in range(num_layers)
             ]
         )
+        self.ffn = nn.Sequential(
+                nn.Linear(d_k, d_k),
+                nn.ReLU(),
+                nn.Linear(d_k, self.ffn_output),
+                nn.ReLU(),
+                nn.Linear(self.ffn_output, self.hidden_dim)
+            )
         self.apply(init_weights)
     def forward(self, x_screens, x_variables):
         batch_size = x_screens.size(0)
         seq_len = x_screens.size(1)
-        print(x_screens)
-        print(x_screens.ndimension())
+        obs_dim = x_screens.size()[2:] if len(x_screens.size()) > 3 else x_screens.size(2)
+        assert (
+            seq_len <= self.history_len
+        ), "Cannot forward, history is longer than expected."
         assert x_screens.ndimension() == 5
         assert len(x_variables) == self.n_variables
         assert all(x.ndimension() == 2 and x.size(0) == batch_size and
                    x.size(1) == seq_len for x in x_variables)
 
-        # We're doing a batched forward through the network base
-        # Flattening seq_len into batch_size ensures that it will be applied
-        # to all timesteps independently.
         obss_embeddings, output_gf = self.base_forward(
             x_screens.view(batch_size * seq_len, *x_screens.size()[2:]),
             [v.contiguous().view(batch_size * seq_len) for v in x_variables]
-        )
-        obs_dim = obss_embeddings.size()[2:] if len(obss_embeddings.size()) > 3 else obss_embeddings.size(2)
-        history_len = obss_embeddings.size(1)
-        assert (
-            history_len <= self.history_len
-        ), "Cannot forward, history is longer than expected."
-
-        assert (
-            obs_dim == self.obs_dim
-        ), f"Obs dim is incorrect. Expected {self.obs_dim} got {obs_dim}"
+        ) 
+        # Maybe we should have an extra embedding for actions inside of the input?
+        obss_embeddings = obss_embeddings.reshape(batch_size, seq_len, obss_embeddings.size(-1)) # Size: (batch_size, histroy_len, d_k)
+        
         inputs = self.dropout(
-                obss_embeddings + self.position_embedding()
+                obss_embeddings + self.position_embedding()[:, :seq_len, :]
             )
-        output = self.ffn(self.transformer_layers(inputs))
-        output_sc, output_gf = self.head_forward(output.view(-1, self.hidden_dim))
-        return output[:, -history_len:, :], output_gf # NOT SURE ABOUT THAT
+        output = self.ffn(self.transformer_layers(inputs)) # Size: (batch_size, histroy_len, self.hidden_dim)
+        output_sc = self.head_forward(output.view(-1, self.hidden_dim))
+        output_sc = output_sc.view(batch_size, seq_len, output_sc.size(1)) # Size: (batch_size, histroy_len, num_actions = 7)
+        print("OUTPUT_SC: ", output_sc.size()) # Size (batch_size, num_actions)
+        return output_sc, output_gf # NOT SURE ABOUT THAT
 
 # To do:
 # - Game features vs variables / What other variables should we be feeding to the DTQN
-# - Pytorch version and functions
 # - Checkout dtqn_agent.py -> function: f_train
 # - Are the input / output shapes correct?
 

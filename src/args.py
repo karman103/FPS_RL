@@ -12,14 +12,13 @@ def parse_game_args(args):
     """
     parser = argparse.ArgumentParser(description='Doom parameters')
 
-    # Doom scenario / map ID
+    # Doom scenario / map ID    
     parser.add_argument("--scenario", type=str, default="deathmatch",
                         help="Doom scenario")
     parser.add_argument("--map_ids_train", type=map_ids_flag, default=map_ids_flag("1"),
                         help="Train map IDs")
     parser.add_argument("--map_ids_test", type=map_ids_flag, default=map_ids_flag("1"),
                         help="Test map IDs")
-
     # general game options (freedoom, screen resolution, available buffers,
     # game features, things to render, history size, frame skip, etc)
     parser.add_argument("--freedoom", type=bool_flag, default=True,
