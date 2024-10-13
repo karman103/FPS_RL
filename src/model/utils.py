@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 from logging import getLogger
 from .bucketed_embedding import BucketedEmbedding
-
+from .dqn.DMQN.MambaBlock import MambaBlock
 
 logger = getLogger()
 
@@ -15,6 +15,8 @@ def get_recurrent_module(module_type):
         return nn.GRU
     elif module_type == 'lstm':
         return nn.LSTM
+    elif module_type == 'mamba':
+        return MambaBlock
     else:
         raise Exception("Unknown recurrent module type: '%s'" % module_type)
 
