@@ -40,6 +40,9 @@ class DQNModuleRecurrent(DQNModuleBase):
 
         # unflatten the input and apply the RNN
         rnn_input = state_input.view(batch_size, seq_len, self.output_dim)
+        if self.params.recurrence == 'mamba':
+            rnn_output = self.rnn(rnn_input)
+            next_state = []
         rnn_output, next_state = self.rnn(rnn_input, prev_state)
         rnn_output = rnn_output.contiguous()
 
@@ -76,8 +79,8 @@ class DQNRecurrent(DQN):
 
         screens, variables = self.prepare_f_eval_args(last_states)
 
-        # if we remember the whole sequence, only feed the last frame
-        if self.params.remember:
+        # if we remember the whole sequence, only feed the last frame - no remembering for mamba
+        if self.params.remember and self.params.recurrence != 'mamba':
             output = self.module(
                 screens[-1:].view(1, 1, *self.screen_shape),
                 [variables[-1:, i].view(1, 1)
