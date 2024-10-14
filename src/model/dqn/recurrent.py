@@ -15,7 +15,7 @@ class DQNModuleRecurrent(DQNModuleBase):
                                     num_layers=params.n_rec_layers,
                                     dropout=params.dropout,
                                     batch_first=True)
-
+        self.recurrence = params.recurrence
     def forward(self, x_screens, x_variables, prev_state):
         """
         Argument sizes:
@@ -40,10 +40,11 @@ class DQNModuleRecurrent(DQNModuleBase):
 
         # unflatten the input and apply the RNN
         rnn_input = state_input.view(batch_size, seq_len, self.output_dim)
-        if self.params.recurrence == 'mamba':
+        if self.recurrence == 'mamba':
             rnn_output = self.rnn(rnn_input)
             next_state = []
-        rnn_output, next_state = self.rnn(rnn_input, prev_state)
+        else:
+          rnn_output, next_state = self.rnn(rnn_input, prev_state)
         rnn_output = rnn_output.contiguous()
 
         # apply the head to RNN hidden states (simulating larger batch again)
