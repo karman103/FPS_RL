@@ -156,6 +156,6 @@ class DQNRecurrent(DQN):
     @staticmethod
     def validate_params(params):
         DQN.validate_params(params)
-        assert params.recurrence in ['rnn', 'gru', 'lstm']
+        assert params.recurrence in ['rnn', 'gru', 'lstm', 'mamba']
         assert params.n_rec_updates >= 1
         assert params.n_rec_layers >= 1
