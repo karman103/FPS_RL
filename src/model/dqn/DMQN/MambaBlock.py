@@ -5,8 +5,8 @@ from mamba_ssm import Mamba
 
 class MambaBlock(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, dropout=0, batch_first=True, d_conv = 4, expand = 2):
-        super(MambaBlock).__init__()
-        self.d_state = 4 * input_size
+        super(MambaBlock, self).__init__()
+        self.d_state = min(2 * input_size, 256)
         self.d_conv = d_conv
         self.expand = expand
         self.d_model = input_size
