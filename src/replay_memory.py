@@ -60,7 +60,7 @@ class ReplayMemory:
         while count < batch_size:
             print(hist_size, self.size)
             # index will be the index of s_t
-            print(f"hist_size: {hist_size}, self.size: {self.size}")
+            # print(f"hist_size: {hist_size}, self.size: {self.size}")
             index = np.random.randint(hist_size - 1, self.size - 1)
 
             # check that we are not wrapping over the cursor
