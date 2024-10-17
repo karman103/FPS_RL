@@ -131,7 +131,7 @@ class DTQN_aly(DQNModuleBase):
         output = self.ffn(self.transformer_layers(inputs)) # Size: (batch_size, histroy_len, self.hidden_dim)
         output_sc = self.head_forward(output.view(-1, self.hidden_dim))
         output_sc = output_sc.view(batch_size, seq_len, output_sc.size(1)) # Size: (batch_size, histroy_len, num_actions = 7)
-        print("OUTPUT_SC: ", output_sc.size()) # Size (batch_size, num_actions)
+        # print("OUTPUT_SC: ", output_sc.size()) # Size (batch_size, num_actions)
         return output_sc, output_gf # NOT SURE ABOUT THAT
 
 # To do:
