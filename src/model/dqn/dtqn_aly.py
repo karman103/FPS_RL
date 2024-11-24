@@ -48,7 +48,7 @@ class DTQN_aly(DQNModuleBase):
             environment. If the environment has multiple obs dims with different number
             of observations in each dim, this can be supplied as a vector. Default: `None`
     """
-    def __init__(self, params, ffn_output=128, obs_dim=100, d_k=4672, num_heads=8, num_layers=5, history_len=50, dropout=0.1, gate='res', identity=False, pos='sin'):
+    def __init__(self, params, ffn_output=128, obs_dim=100, d_k=4672, num_heads=8, num_layers=5, history_len=50, dropout=0.1, gate='res', identity=False, pos='sin', action_dim=1):
         # Investigate what are params
         super(DTQN_aly, self).__init__(params)
         self.params = params
@@ -79,7 +79,10 @@ class DTQN_aly(DQNModuleBase):
             mlp_gate = ResGate()
         else:
             raise ValueError("Gate must be one of `gru`, `res`")
-
+        action_dim = self.obs_dim
+        self.action_embedding = ActionEmbeddingRepresentation(
+            num_actions=self.params.n_actions, action_dim=action_dim # action_dim is a hyperparameter?
+        )
         self.dropout = nn.Dropout(dropout)
         if identity:
             transformer_block = TransformerIdentityLayer
@@ -102,11 +105,15 @@ class DTQN_aly(DQNModuleBase):
                 nn.Linear(d_k, d_k),
                 nn.ReLU(),
                 nn.Linear(d_k, self.ffn_output),
-                nn.ReLU(),
-                nn.Linear(self.ffn_output, self.hidden_dim)
+                # nn.ReLU(),
+                # nn.Linear(self.ffn_output, self.hidden_dim)
             )
         self.apply(init_weights)
-    def forward(self, x_screens, x_variables):
+
+    def forward(self, x_screens, x_variables, actions):
+        """
+        actions is  batch x seq_len  x       1
+        """
         batch_size = x_screens.size(0)
         seq_len = x_screens.size(1)
         obs_dim = x_screens.size()[2:] if len(x_screens.size()) > 3 else x_screens.size(2)
@@ -124,9 +131,13 @@ class DTQN_aly(DQNModuleBase):
         ) 
         # Maybe we should have an extra embedding for actions inside of the input?
         obss_embeddings = obss_embeddings.reshape(batch_size, seq_len, obss_embeddings.size(-1)) # Size: (batch_size, histroy_len, d_k)
+        token_embeddings = obss_embeddings
         
+        action_embed = self.action_embedding(actions)
+        token_embeddings = torch.concat([action_embed, token_embeddings], dim=-1)
+
         inputs = self.dropout(
-                obss_embeddings + self.position_embedding()[:, :seq_len, :]
+                token_embeddings + self.position_embedding()[:, :seq_len, :]
             )
         output = self.ffn(self.transformer_layers(inputs)) # Size: (batch_size, histroy_len, self.hidden_dim)
         output_sc = self.head_forward(output.view(-1, self.hidden_dim))

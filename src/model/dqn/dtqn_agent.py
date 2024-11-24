@@ -2,6 +2,7 @@ from .base import DQN
 from .dtqn_aly import DTQN_aly
 import torch
 from torch.autograd import Variable
+import numpy as np
 from ...utils import bool_flag
 
 class DTQNAgent(DQN):
@@ -39,6 +40,7 @@ class DTQNAgent(DQN):
         output_sc, output_gf = self.module(
             screens,
             [variables[:, :, i] for i in range(self.params.n_variables)],
+            np.expand_dims(actions, axis=-1) # (batch_size, seq_len-1, 1)
         )
 
         # compute scores
