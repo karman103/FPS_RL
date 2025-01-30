@@ -2,3 +2,6 @@ lib/
 __pycache__/
 *.py[cod]
 _vizdoom.ini
+dumped
+pretrained
+arnold_env
