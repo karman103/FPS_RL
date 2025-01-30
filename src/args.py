@@ -5,7 +5,7 @@ from .utils import bool_flag, map_ids_flag, bcast_json_list
 from .doom.utils import get_n_feature_maps
 from .doom.game_features import parse_game_features
 
-
+# New comment
 def parse_game_args(args):
     """
     Parse global game parameters.
