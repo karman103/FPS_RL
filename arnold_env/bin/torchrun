@@ -1,4 +1,4 @@
-#!/content/drive/MyDrive/FPS_RL/arnold_env/bin/python3
+#!/mnt/wato-drive2/fps_rl/FPS_RL/arnold_env/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys

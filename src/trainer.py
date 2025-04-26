@@ -217,7 +217,8 @@ class ReplayMemoryTrainer(Trainer):
         # prime the training
         if self.replay_memory.size < self.params.batch_size:
             return
-
+        if self.params.hist_size +  (0 if self.params.recurrence == '' else self.params.n_rec_updates - 1) >= self.replay_memory.size:
+            return 
         # sample from replay memory and compute predictions and losses
         memory = self.replay_memory.get_batch(
             self.params.batch_size,
