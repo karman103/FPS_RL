@@ -182,8 +182,9 @@ class DQN(object):
         return screens, variables, features, actions, rewards, isfinal
 
     def register_loss(self, loss_history, loss_sc, loss_gf):
+        print("LOSS GF: ", loss_gf.data)
         loss_history['dqn_loss'].append(loss_sc.data)
-        loss_history['gf_loss'].append(loss_gf.data[0]
+        loss_history['gf_loss'].append(loss_gf.data
                                        if self.n_features else 0)
 
     def next_action(self, last_states, save_graph=False):
