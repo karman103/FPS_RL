@@ -117,8 +117,7 @@ class DQN(object):
 
     def get_var(self, x):
         """Move a tensor to a CPU / GPU variable."""
-        x = Variable(x)
-        return x.cuda() if self.cuda else x
+        return x.to('cuda' if self.cuda else 'cpu')
 
     def reset(self):
         pass

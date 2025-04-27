@@ -44,7 +44,7 @@ class DQNModuleRecurrent(DQNModuleBase):
             rnn_output = self.rnn(rnn_input)
             next_state = []
         else:
-          rnn_output, next_state = self.rnn(rnn_input, prev_state)
+            rnn_output, next_state = self.rnn(rnn_input, prev_state)
         rnn_output = rnn_output.contiguous()
 
         # apply the head to RNN hidden states (simulating larger batch again)
