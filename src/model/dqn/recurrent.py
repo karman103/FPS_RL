@@ -112,7 +112,6 @@ class DQNRecurrent(DQN):
 
         batch_size = self.params.batch_size
         seq_len = self.hist_size + self.params.n_rec_updates
-
         output_sc, output_gf, _ = self.module(
             screens,
             [variables[:, :, i] for i in range(self.params.n_variables)],
